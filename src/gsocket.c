@@ -16,8 +16,7 @@
 /**
  * Recieve sockaddr IPv4 or IPv6
  */
-void *kaitalk_in_addr(struct sockaddr *sa)
-{
+void *kaitalk_in_addr(struct sockaddr *sa) {
 	if (sa->sa_family == AF_INET)
 		return &(((struct sockaddr_in*)sa)->sin_addr);
 

@@ -1,7 +1,7 @@
 TARGET = libkaitalk.so
-OBJECTS = src/gsocket.o
-CFLAGS = -fPIC -c -Wall -Iinclude
-LDFLAGS = -shared
+OBJECTS = src/gsocket.o src/voice.o
+CFLAGS = -fPIC -c -Wall -Iinclude -I/opt/local/include
+LDFLAGS = -shared -fPIC -L/opt/local/lib -lportaudio
 CC = gcc
 LD = $(CC)
 
