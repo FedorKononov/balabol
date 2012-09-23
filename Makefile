@@ -10,7 +10,7 @@ all: $(TARGET)
 $(TARGET): $(OBJECTS)
 	$(LD) -o $@ $^ $(LDFLAGS)
 
-kaitalk: examples/test.o $(TARGET)
+test: examples/voice_test.o $(TARGET)
 	$(LD) -o $@ $< -lkaitalk
 
 %.o: %.c
