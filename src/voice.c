@@ -17,6 +17,7 @@
 #define CLEAR(a) memset((a), 0,  FRAMES_PER_BUFFER * NUM_CHANNELS * SAMPLE_SIZE)
 
 #include <kaitalk/voice.h>
+#include <kaitalk/encoder.h>
 
 /**
  * Creating portaudio stream to read input data
@@ -62,25 +63,36 @@ struct PaStream* kaitalk_voice_create_stream() {
 /**
  * Listen for stream and return recorded voice command
  */
-int kaitalk_voice_listen_stream(PaStream **stream, struct voice_buffer **buffer_head) {
+int kaitalk_voice_listen_stream(PaStream **stream, char **ret_buffer) {
 	char *sampleBlock;
-	int j, numBytes;
+	int j, numBytes, offset;
 	double average;
 	int silence_state = 0;
+	int numSamples = 0;
 	char sampleItem;
 	struct voice_buffer *buffer = NULL;
+	struct voice_buffer *tmp_buffer = NULL;
+	struct voice_buffer *buffer_head = NULL;
+
+	//speex 
+	struct encoder_speex *speex = NULL;
+	int encoded_bytes;
+	char *encoded_buffer;
 	
 	numBytes = FRAMES_PER_BUFFER * NUM_CHANNELS * SAMPLE_SIZE ;
 	sampleBlock = (char *) malloc(numBytes);
 	
 	CLEAR(sampleBlock);
 
+	// init speex encoding
+	speex = kaitalk_encoder_speex_init();
+
 	while (1) {
 		Pa_ReadStream(*stream, sampleBlock, FRAMES_PER_BUFFER);
 
 		// calc average
 		average = 0.0;
-		for (j=0; j<FRAMES_PER_BUFFER*SAMPLE_SIZE; j++)	{
+		for (j=0; j<numBytes; j++)	{
 			sampleItem = sampleBlock[j];
 			if (sampleItem < 0) sampleItem = -sampleItem; // abs()
 			average += sampleItem;
@@ -93,8 +105,8 @@ int kaitalk_voice_listen_stream(PaStream **stream, struct voice_buffer **buffer_
 				silence_state = 1;
 
 				// инициализируем голову буфера
-				*buffer_head = malloc(sizeof(struct voice_buffer));
-				buffer = *buffer_head;
+				buffer_head = malloc(sizeof(struct voice_buffer));
+				buffer = buffer_head;
 			} else
 				silence_state = 2;
 			
@@ -113,6 +125,7 @@ int kaitalk_voice_listen_stream(PaStream **stream, struct voice_buffer **buffer_
 			buffer->data = (short *) malloc(numBytes);
 			memcpy(buffer->data, sampleBlock, numBytes);
 			buffer->next = 0;
+			numSamples++;
 
 			// тишину мы тоже пишим но увеличиваем счетчик
 			if (average < NOISE_THRESHOLD)
@@ -121,7 +134,31 @@ int kaitalk_voice_listen_stream(PaStream **stream, struct voice_buffer **buffer_
 
 			if (silence_state > QUIT_HOLDING_TIME) {
 				printf("record stop\n");
-				return 123;// buffer len
+				*ret_buffer = malloc(sizeof(char) * numBytes * numSamples);
+				offset = 0;
+
+				buffer = buffer_head;
+				while (buffer != NULL) {
+
+					tmp_buffer = buffer;
+					encoded_buffer = NULL;
+
+					encoded_bytes = kaitalk_encoder_speex_encode(speex, &buffer->data, &encoded_buffer);
+					//printf("%d\n", encoded_bytes);
+					
+					//memcpy(*ret_buffer + offset, buffer->data, numBytes);
+
+					memcpy(*ret_buffer + offset, &encoded_bytes, 1);
+					memcpy(*ret_buffer + offset + 1, encoded_buffer, encoded_bytes);
+
+					offset = offset + encoded_bytes + 1;
+
+					buffer = buffer->next;
+					free(tmp_buffer);
+				}
+				buffer_head = NULL;
+
+				return offset;// buffer len
 			}
 		}
 	}

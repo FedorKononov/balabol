@@ -33,4 +33,4 @@ int kaitalk_voice_close_stream(PaStream **stream);
 /**
  * Listen for stream and return recorded voice command
  */
-int kaitalk_voice_listen_stream(PaStream **stream, struct voice_buffer **buffer_head);
+int kaitalk_voice_listen_stream(PaStream **stream,  char **ret_buffer);
