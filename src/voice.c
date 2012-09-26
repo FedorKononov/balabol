@@ -11,6 +11,7 @@
 #define NUM_CHANNELS 1
 #define NOISE_THRESHOLD 21000
 #define QUIT_HOLDING_TIME 40
+#define PRE_BUFFER_SAMPLES_MAX 20
 
 #define PA_SAMPLE_TYPE  paInt16
 #define SAMPLE_SIZE 2
@@ -69,10 +70,13 @@ int kaitalk_voice_listen_stream(PaStream **stream, char **ret_buffer) {
 	double average;
 	int silence_state = 0;
 	int numSamples = 0;
+	int pre_buffed_count = 0;
 	char sampleItem;
 	struct voice_buffer *buffer = NULL;
 	struct voice_buffer *tmp_buffer = NULL;
 	struct voice_buffer *buffer_head = NULL;
+	struct voice_buffer *pre_buffer_head = NULL;
+	struct voice_buffer *pre_buffer = NULL;
 
 	//speex 
 	struct encoder_speex *speex = NULL;
@@ -87,6 +91,10 @@ int kaitalk_voice_listen_stream(PaStream **stream, char **ret_buffer) {
 	// init speex encoding
 	speex = kaitalk_encoder_speex_init();
 
+	// буфер для хранения кусочка звука до активации записи голоса, чтобы в начале записи не попадало несколько семплов
+	pre_buffer_head = malloc(sizeof(struct voice_buffer));
+	pre_buffer = pre_buffer_head;
+
 	while (1) {
 		Pa_ReadStream(*stream, sampleBlock, FRAMES_PER_BUFFER);
 
@@ -97,7 +105,7 @@ int kaitalk_voice_listen_stream(PaStream **stream, char **ret_buffer) {
 			if (sampleItem < 0) sampleItem = -sampleItem; // abs()
 			average += sampleItem;
 		}
-		
+
 		// если поймана речь начинаем писать буфер и активируем счетчик тишины для прекрашения записи если в эфире будет тишина
 		if (average > NOISE_THRESHOLD) {
 			if (silence_state == 0)	{
@@ -105,8 +113,8 @@ int kaitalk_voice_listen_stream(PaStream **stream, char **ret_buffer) {
 				silence_state = 1;
 
 				// инициализируем голову буфера
-				buffer_head = malloc(sizeof(struct voice_buffer));
-				buffer = buffer_head;
+				buffer_head = pre_buffer_head;
+				buffer = pre_buffer;
 			} else
 				silence_state = 2;
 			
@@ -160,7 +168,27 @@ int kaitalk_voice_listen_stream(PaStream **stream, char **ret_buffer) {
 
 				return offset;// buffer len
 			}
+
+			continue;
 		}
+
+		// если размер пребуфера вырос то чистим начало пребуфера
+		if (pre_buffed_count > PRE_BUFFER_SAMPLES_MAX) {
+			tmp_buffer = pre_buffer_head;
+
+			pre_buffer_head = pre_buffer_head->next;
+
+			free(tmp_buffer);
+		}
+
+		// если попали сюда значит в эфире не было звука то пишем данные чтобы потом добавить к записи, чтобы голос начинался плавно
+		pre_buffer->data = (short *) malloc(numBytes);
+		memcpy(pre_buffer->data, sampleBlock, numBytes);
+		pre_buffer->next = malloc(sizeof(struct voice_buffer));
+		pre_buffer = pre_buffer->next;
+
+		// увеличиваем счетчик пребуфера
+		pre_buffed_count++;
 	}
 }
 
