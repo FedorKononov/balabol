@@ -11,7 +11,7 @@
 
 int main(int argc, char **argv) {
 	int sockfd;
-	char* read_buf;
+	char *read_buf;
 
 	if ((sockfd = kaitalk_socket_connect()) < 1) {
 		printf("can't open socket connection\n");

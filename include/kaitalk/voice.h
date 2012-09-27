@@ -1,5 +1,5 @@
 /**
- * voice.c
+ * voice.h
  * 
  * Created by Kainet
  *

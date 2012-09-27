@@ -127,7 +127,7 @@ int kaitalk_voice_listen_stream(PaStream **stream, char **ret_buffer) {
 				buffer = buffer->next;
 			}
 
-			printf("sample average = %lf\n", average);
+			//printf("sample average = %lf\n", average);
 
 			// пишем семпл в буфер
 			buffer->data = (short *) malloc(numBytes);

@@ -103,7 +103,7 @@ int kaitalk_socket_read(int sockfd, char** buffer) {
 	//input buffer offest
 	offset = 0;
 
-	while (1){
+	while (1) {
 		read_flags = master;
 
 		if (select(sockfd+1, &read_flags, NULL, NULL, &waitd) < 0) {
@@ -133,5 +133,7 @@ int kaitalk_socket_read(int sockfd, char** buffer) {
 			break;
 	}
 
-	return sock_numbytes;
+	(*buffer)[offset] = '\0';
+
+	return offset+1;
 }
