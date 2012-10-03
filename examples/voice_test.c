@@ -82,12 +82,10 @@ int main(int argc, char **argv) {
 					cmd->confidence = atof(tmp_confidence);
 					printf("confidence : %f\n", cmd->confidence);
 
+					kaitalk_vassal_run_action(cmd->code);
+
 					free(cmd);
 				}
-			}
-
-			if (strstr(response, "огонь")) {
-				break;
 			}
 		}
 	}

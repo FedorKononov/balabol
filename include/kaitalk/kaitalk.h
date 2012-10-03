@@ -9,3 +9,4 @@
 #include <kaitalk/voice.h>
 #include <kaitalk/gsocket.h>
 #include <kaitalk/encoder.h>
+#include <kaitalk/vassal.h>

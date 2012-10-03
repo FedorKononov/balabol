@@ -42,7 +42,7 @@ int kaitalk_socket_connect() {
 	}
 
 	// loop through all the servinfo results
-	for(p = servinfo; p != NULL; p = p->ai_next) {
+	for (p = servinfo; p != NULL; p = p->ai_next) {
 		if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
 			perror("client: socket");
 			continue;
@@ -119,7 +119,7 @@ int kaitalk_socket_read(int sockfd, char** buffer) {
 			// flush internal buffer
 			memset(&internal_buf, 0, sizeof(char));
 
-			if((sock_numbytes = recv(sockfd, internal_buf, SOCKET_READ_BUFFER, 0)) < 0) {
+			if ((sock_numbytes = recv(sockfd, internal_buf, SOCKET_READ_BUFFER, 0)) < 0) {
 				printf("socket recv error\n");
 				return -1;
 			}
@@ -136,4 +136,45 @@ int kaitalk_socket_read(int sockfd, char** buffer) {
 	(*buffer)[offset] = '\0';
 
 	return offset+1;
+}
+
+/**
+ * Send hdl command via udp socket
+ */
+int kaitalk_create_hdl_send_cmd(char *addr, int addr_port, unsigned char **data, int data_len) {
+	int sockfd;
+	struct sockaddr_in their_addr; // connector's address information
+	struct hostent *he;
+	int numbytes;
+	int broadcast = 1;
+
+	if ((he=gethostbyname(addr)) == NULL) {  // get the host info
+		perror("gethostbyname");
+		return -1;
+	}
+
+	if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
+		perror("socket");
+		return -1;
+	}
+
+	// this call is what allows broadcast packets to be sent:
+	if (setsockopt(sockfd, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof broadcast) == -1) {
+		perror("setsockopt (SO_BROADCAST)");
+		return -1;
+	}
+
+	their_addr.sin_family = AF_INET; // host byte order
+	their_addr.sin_port = htons(addr_port); // short, network byte order
+	their_addr.sin_addr = *((struct in_addr *)he->h_addr);
+	memset(their_addr.sin_zero, '\0', sizeof their_addr.sin_zero);
+
+	if ((numbytes=sendto(sockfd, *data, data_len, 0, (struct sockaddr *)&their_addr, sizeof their_addr)) == -1) {
+		perror("sendto");
+		exit(1);
+	}
+
+	close(sockfd);
+
+	return numbytes;
 }

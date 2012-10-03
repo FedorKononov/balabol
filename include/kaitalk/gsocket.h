@@ -4,6 +4,7 @@
  * Created by Kainet
  *
  * Non-blocking connection to google speech api
+ * also controlling HDL udp socket
  */
 
 #include <stdio.h>
@@ -36,3 +37,8 @@ int kaitalk_socket_send(int sockfd, char** buffer, int buffer_len);
  * Read data from socket in non-blocking mode
  */
 int kaitalk_socket_read(int sockfd, char** buffer);
+
+/**
+ * Send hdl command via udp socket
+ */
+int kaitalk_create_hdl_send_cmd(char *addr, int addr_port, unsigned char **data, int data_len);
