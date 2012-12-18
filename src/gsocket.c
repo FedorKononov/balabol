@@ -117,7 +117,7 @@ int kaitalk_socket_read(int sockfd, char** buffer) {
 			FD_CLR(sockfd, &read_flags);
 
 			// flush internal buffer
-			memset(&internal_buf, 0, sizeof(char));
+			memset(&internal_buf, 0, sizeof(char) * SOCKET_READ_BUFFER);
 
 			if ((sock_numbytes = recv(sockfd, internal_buf, SOCKET_READ_BUFFER, 0)) < 0) {
 				printf("socket recv error\n");
