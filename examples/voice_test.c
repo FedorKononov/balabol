@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
 		buffer_len = 0;
 
 		if ((buffer_len = kaitalk_voice_listen_stream(&stream, &buffer)) > 0) {
-			//printf("%d\n", buffer_len);
+			printf("%d\n", buffer_len);
 
 			char *query = (char *)malloc(strlen(tpl));
 			sprintf(query, tpl, buffer_len);
@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
 				printf("kaitalk_socket_send - error\n");
 			}
 
-			//printf("%s\n", response);
+			printf("%s\n", response);
 
 			free(query);
 
